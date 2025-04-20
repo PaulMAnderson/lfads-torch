@@ -2,7 +2,7 @@ import io
 
 import matplotlib.pyplot as plt
 import numpy as np
-import pytorch_lightning as pl
+import lightning as pl
 import torch
 from PIL import Image
 from sklearn.decomposition import PCA
@@ -22,9 +22,9 @@ def has_image_loggers(loggers):
     """
     logger_list = loggers if isinstance(loggers, list) else [loggers]
     for logger in logger_list:
-        if isinstance(logger, pl.loggers.TensorBoardLogger):
+        if isinstance(logger, pl.pytorch.loggers.TensorBoardLogger):
             return True
-        elif isinstance(logger, pl.loggers.WandbLogger):
+        elif isinstance(logger, pl.pytorch.loggers.WandbLogger):
             return True
     return False
 
@@ -50,9 +50,9 @@ def log_figure(loggers, name, fig, step):
     # Distribute image to all image loggers
     logger_list = loggers if isinstance(loggers, list) else [loggers]
     for logger in logger_list:
-        if isinstance(logger, pl.loggers.TensorBoardLogger):
+        if isinstance(logger, pl.pytorch.loggers.TensorBoardLogger):
             logger.experiment.add_figure(name, fig, step)
-        elif isinstance(logger, pl.loggers.WandbLogger):
+        elif isinstance(logger, pl.pytorch.loggers.WandbLogger):
             logger.log_image(name, [image], step)
     img_buf.close()
 
@@ -80,9 +80,9 @@ class RasterPlot(pl.Callback):
         """Logs plots at the end of the validation epoch.
         Parameters
         ----------
-        trainer : pytorch_lightning.Trainer
+        trainer : lightning.Trainer
             The trainer currently handling the model.
-        pl_module : pytorch_lightning.LightningModule
+        pl_module : lightning.LightningModule
             The model currently being trained.
         """
         if (trainer.current_epoch % self.log_every_n_epochs) != 0:
@@ -95,8 +95,9 @@ class RasterPlot(pl.Callback):
             dataloader = trainer.datamodule.val_dataloader()
         else:
             dataloader = trainer.datamodule.train_dataloader(shuffle=False)
-        batch = next(iter(dataloader))
+        batch, batch_idx, dataloader_idx = next(iter(dataloader))
         # Determine which sessions are in the batch
+        # print(type(batch), batch)
         sessions = sorted(batch.keys())
         # Move data to the right device
         batch = send_batch_to_device(batch, pl_module.device)
@@ -175,9 +176,9 @@ class TrajectoryPlot(pl.Callback):
 
         Parameters
         ----------
-        trainer : pytorch_lightning.Trainer
+        trainer : lightning.Trainer
             The trainer currently handling the model.
-        pl_module : pytorch_lightning.LightningModule
+        pl_module : lightning.LightningModule
             The model currently being trained.
         """
         # Skip evaluation for most epochs to save time
@@ -239,3 +240,14 @@ class TestEval(pl.Callback):
             test_output.output_params[:, :esl, :edd],
         )
         pl_module.log("test/recon", test_recon)
+
+
+import ray.tune.integration.pytorch_lightning as rpl
+class MyTuneReportCheckpointCallback(rpl.TuneReportCheckpointCallback):
+    def __init__(self, metrics, filename, **kwargs):
+        # Explicitly pass the required parameters to the parent class
+        super().__init__(
+            metrics=metrics,
+            filename=filename,
+            **kwargs
+        )

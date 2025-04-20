@@ -1,6 +1,6 @@
 from typing import Any, Dict, Literal, Tuple, Union
 
-import pytorch_lightning as pl
+import lightning as pl
 import torch
 from torch import nn
 
@@ -325,7 +325,7 @@ class LFADS(pl.LightningModule):
         return torch.clamp(torch.tensor(ramp), 0, 1)
 
     def on_before_optimizer_step(
-        self, optimizer: torch.optim.Optimizer, optimizer_idx: int
+        self, optimizer: torch.optim.Optimizer, optimizer_idx: int=0
     ):
         """
         This method is called before each optimizer step to gradually ramp up weight decay.

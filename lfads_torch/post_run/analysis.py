@@ -22,7 +22,7 @@ def run_posterior_sampling(model, datamodule, filename, num_samples=50):
     ----------
     model : lfads_torch.model.LFADS
         A trained LFADS model.
-    datamodule : pytorch_lightning.LightningDataModule
+    datamodule : lightning.LightningDataModule
         The `LightningDataModule` to pass through the `model`.
     filename : str
         The filename to use for saving output

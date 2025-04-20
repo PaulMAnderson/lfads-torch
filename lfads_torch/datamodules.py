@@ -2,9 +2,9 @@ from glob import glob
 
 import h5py
 import numpy as np
-import pytorch_lightning as pl
+import lightning as pl
 import torch
-from pytorch_lightning.trainer.supporters import CombinedLoader
+from lightning.pytorch.utilities.combined_loader import CombinedLoader
 from sklearn.model_selection import train_test_split
 from torch import Tensor
 from torch.utils.data import DataLoader, Dataset

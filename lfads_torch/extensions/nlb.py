@@ -1,6 +1,6 @@
 import warnings
 
-import pytorch_lightning as pl
+import lightning as pl
 import torch
 from nlb_tools.evaluation import (
     bits_per_spike,
@@ -43,9 +43,9 @@ class NLBEvaluation(pl.Callback):
 
         Parameters
         ----------
-        trainer : pytorch_lightning.Trainer
+        trainer : lightning.Trainer
             The trainer currently handling the model.
-        pl_module : pytorch_lightning.LightningModule
+        pl_module : lightning.LightningModule
             The model currently being trained.
         """
         # Skip evaluation for most epochs to save time

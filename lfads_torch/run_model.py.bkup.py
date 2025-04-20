@@ -5,7 +5,7 @@ from glob import glob
 from pathlib import Path
 
 import hydra
-import pytorch_lightning as pl
+import lightning as pl
 import torch
 from hydra.utils import call, instantiate
 from omegaconf import OmegaConf, open_dict
@@ -43,7 +43,7 @@ def run_model(
 
     # Avoid flooding the console with output during multi-model runs
     if config.ignore_warnings:
-        logging.getLogger("pytorch_lightning").setLevel(logging.WARNING)
+        logging.getLogger("lightning").setLevel(logging.WARNING)
         warnings.filterwarnings("ignore")
 
     # Set seed for random number generators in pytorch, numpy and python.random
@@ -65,7 +65,7 @@ def run_model(
             with open_dict(config):
                 config.logger.wandb_logger.name = tune.get_trial_name()
                 config.logger.wandb_logger.id = tune.get_trial_name()
-        # Instantiate the pytorch_lightning `Trainer` and its callbacks and loggers
+        # Instantiate the lightning `Trainer` and its callbacks and loggers
         trainer = instantiate(
             config.trainer,
             callbacks=[instantiate(c) for c in config.callbacks.values()],

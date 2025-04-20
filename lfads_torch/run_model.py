@@ -7,7 +7,7 @@ from pathlib import Path
 
 import hydra
 import torch
-import pytorch_lightning as pl
+import lightning as pl
 from hydra.utils import call, instantiate
 from omegaconf import OmegaConf, open_dict
 from ray import tune
@@ -60,7 +60,7 @@ def run_model(
     config_path = Path(config_path)
     overrides = [f"{k}={v}" for k, v in flatten(overrides).items()]
     with hydra.initialize(
-        config_path=config_path.parent,
+        config_path=str(config_path.parent),
         job_name="run_model",
         version_base="1.1",
     ):
@@ -68,7 +68,7 @@ def run_model(
     
     # Avoid flooding the console with output during multi-model runs
     if config.ignore_warnings:
-        logging.getLogger("pytorch_lightning").setLevel(logging.WARNING)
+        logging.getLogger("lightning").setLevel(logging.WARNING)
         warnings.filterwarnings("ignore")
     
     # Set seed for random number generators in pytorch, numpy and python.random
@@ -80,6 +80,7 @@ def run_model(
     model = instantiate(config.model)
     if device == "mps":
         model = model.to(device)
+
     # If `checkpoint_dir` is passed, find the most recent checkpoint in the directory
     ckpt_path = None
     if checkpoint_dir:
@@ -98,35 +99,19 @@ def run_model(
         except (ImportError, NameError):
             pass
         
-        # Also, you might need to explicitly set the device map
         # if you're on Apple Silicon
         if device == "mps":
-            # Check PyTorch Lightning version
-            from packaging import version
-            
-            pl_version = version.parse(pl.__version__)
-            if pl_version >= version.parse("1.7.0"):
-                # For newer PyTorch Lightning versions
-                trainer = instantiate(
-                    config.trainer,
-                    callbacks=[instantiate(c) for c in config.callbacks.values()],
-                    logger=[instantiate(lg) for lg in config.logger.values()],
-                    accelerator="auto",  # Let PyTorch Lightning auto-detect
-                    devices=1,           # Use 1 device
-                )
-            else:
-                # For older PyTorch Lightning versions
-                trainer = instantiate(
-                    config.trainer,
-                    callbacks=[instantiate(c) for c in config.callbacks.values()],
-                    logger=[instantiate(lg) for lg in config.logger.values()],
-                    accelerator=None,    # Use default
-                    gpus=0,              # Don't use CUDA gpus
-                )
-
+            # For newer PyTorch Lightning versions
+            trainer = instantiate(
+                config.trainer,
+                callbacks=[instantiate(c) for c in config.callbacks.values()],
+                logger=[instantiate(lg) for lg in config.logger.values()],
+                accelerator="auto",  # Let PyTorch Lightning auto-detect
+                devices=1,           # Use 1 device
+            )
         else:
 
-            # Instantiate the pytorch_lightning `Trainer` with the appropriate accelerator
+            # Instantiate the lightning `Trainer` with the appropriate accelerator
             trainer = instantiate(
                 config.trainer,
                 callbacks=[instantiate(c) for c in config.callbacks.values()],

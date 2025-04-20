@@ -3,9 +3,20 @@ import shutil
 from datetime import datetime
 from pathlib import Path
 
+import ray
 from ray import tune
 from ray.tune import CLIReporter
 from ray.tune.search.basic_variant import BasicVariantGenerator
+
+
+# Need to manually setup ray instance to ensure gpu 
+if not ray.is_initialized():
+    print("Ray not initialized. Starting new instance with 1 GPU...")
+    ray.init(num_gpus=1, include_dashboard=True)
+    print("Ray successfully initialized.")
+else:
+    print("Ray already initialized. Available resources:")
+    print(ray.cluster_resources())
 
 from lfads_torch.extensions.tune import (
     BinaryTournamentPBT,
@@ -18,7 +29,7 @@ from lfads_torch.run_model import run_model
 PROJECT_STR = "lfads-torch-example"
 DATASET_STR = "nlb_mc_maze"
 RUN_TAG = datetime.now().strftime("%y%m%d") + "_examplePBT"
-RUN_DIR = Path("/snel/share/runs") / PROJECT_STR / DATASET_STR / RUN_TAG
+RUN_DIR = Path("runs") / PROJECT_STR / DATASET_STR / RUN_TAG
 HYPERPARAM_SPACE = {
     "model.lr_init": HyperParam(
         1e-5, 5e-3, explore_wt=0.3, enforce_limits=True, init=4e-3

@@ -9,7 +9,7 @@ seed: null
 ignore_warnings: True
 
 trainer:
-  _target_: pytorch_lightning.Trainer
+  _target_: lightning.Trainer
   gradient_clip_val: 200
   max_epochs: 1_000
   log_every_n_steps: 5
@@ -24,33 +24,42 @@ model:
   lr_scheduler: False
 
 callbacks:
-  tune_report_checkpoint_callback:
-    _target_: ray.tune.integration.pytorch_lightning.TuneReportCheckpointCallback
+  # tune_report_checkpoint_callback:
+  #   _target_: ray.tune.integration.pytorch_lightning.TuneReportCheckpointCallback
+  #   metrics:
+  #     - valid/recon_smth
+  #     - cur_epoch
+  #   filename: tune.ckpt
+  #   'on': validation_end
+
+  tune_callback:
+    _target_: lfads_torch.custom_callbacks.CompatibleTuneReportCheckpointCallback
     metrics:
       - valid/recon_smth
       - cur_epoch
     filename: tune.ckpt
-    "on": validation_end
+    'on': validation_end
+
   learning_rate_monitor:
-    _target_: pytorch_lightning.callbacks.LearningRateMonitor
+    _target_: lightning.pytorch.callbacks.LearningRateMonitor
     logging_interval: epoch
 
 logger:
   csv_logger:
-    _target_: pytorch_lightning.loggers.CSVLogger
+    _target_: lightning.pytorch.loggers.CSVLogger
     save_dir: "csv_logs"
     # Allow the logger to create a new version for each generation
     version: null
     name: ""
   tensorboard_logger:
-    _target_: pytorch_lightning.loggers.TensorBoardLogger
+    _target_: lightning.pytorch.loggers.TensorBoardLogger
     # Configure logger so PTL and ray use the same TB file.
     save_dir:
       _target_: ray.tune.get_trial_dir
     version: ""
     name: ""
   wandb_logger:
-    _target_: pytorch_lightning.loggers.WandbLogger
+    _target_: lightning.pytorch.loggers.WandbLogger
     project: null # Overwrite with PROJECT_STR in the run script
     tags:
       - pbt
