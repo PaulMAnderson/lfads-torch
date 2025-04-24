@@ -8,3 +8,4 @@ scikit-learn
 ipykernel
 seaborn
 numpy<2
+protobuf>=3.19.5
