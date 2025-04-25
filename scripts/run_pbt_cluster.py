@@ -3,9 +3,36 @@ import shutil
 from datetime import datetime
 from pathlib import Path
 
+import ray
 from ray import tune
 from ray.tune import CLIReporter
 from ray.tune.search.basic_variant import BasicVariantGenerator
+
+
+# Need to manually setup ray instance to ensure gpu 
+# if not ray.is_initialized():
+#     print("Ray not initialized. Starting new instance with 1 GPU...")
+#     ray.init(num_gpus=1, include_dashboard=True)
+#     print("Ray successfully initialized.")
+# else:
+#     print("Ray already initialized. Available resources:")
+#     print(ray.cluster_resources())
+
+
+try:
+    # This will connect to an existing Ray instance if one is available
+    # Otherwise, it will start a new one
+    ray.init(address='auto', ignore_reinit_error=True)
+    print("Connected to existing Ray instance")
+    
+    # Get information about the cluster
+    print(ray.cluster_resources())
+except ConnectionError:
+    print("No existing Ray instance found")
+    
+    # Optionally start a new one
+    ray.init(num_gpus=1)
+    print("Started new Ray instance")
 
 from lfads_torch.extensions.tune import (
     BinaryTournamentPBT,
@@ -15,23 +42,23 @@ from lfads_torch.extensions.tune import (
 from lfads_torch.run_model import run_model
 
 # ---------- OPTIONS ----------
-PROJECT_STR = "pbt"
-DATASET_STR = "rouse_multisession"
-RUN_TAG = datetime.now().strftime("%y%m%d")
-RUN_DIR = Path("/path/to/save/run/") / PROJECT_STR / DATASET_STR / RUN_TAG
+PROJECT_STR = "lfads-torch-example"
+DATASET_STR = "nlb_mc_maze"
+RUN_TAG = datetime.now().strftime("%y%m%d") + "_examplePBT"
+RUN_DIR = Path("runs") / PROJECT_STR / DATASET_STR / RUN_TAG
 HYPERPARAM_SPACE = {
     "model.lr_init": HyperParam(
-        1e-4, 1e-3, explore_wt=0.3, enforce_limits=True, init=1e-3
+        1e-5, 5e-3, explore_wt=0.3, enforce_limits=True, init=4e-3
     ),
     "model.dropout_rate": HyperParam(
         0.0, 0.6, explore_wt=0.3, enforce_limits=True, sample_fn="uniform"
     ),
     "model.train_aug_stack.transforms.0.cd_rate": HyperParam(
-        0.01, 0.99, explore_wt=0.3, enforce_limits=True, init=0.5, sample_fn="uniform"
+        0.01, 0.7, explore_wt=0.3, enforce_limits=True, init=0.5, sample_fn="uniform"
     ),
-    "model.kl_co_scale": HyperParam(1e-5, 1e-3, explore_wt=0.8),
-    "model.kl_ic_scale": HyperParam(1e-5, 1e-3, explore_wt=0.8),
-    "model.l2_gen_scale": HyperParam(1e-5, 1e-0, explore_wt=0.8),
+    "model.kl_co_scale": HyperParam(1e-6, 1e-4, explore_wt=0.8),
+    "model.kl_ic_scale": HyperParam(1e-6, 1e-3, explore_wt=0.8),
+    "model.l2_gen_scale": HyperParam(1e-4, 1e-0, explore_wt=0.8),
     "model.l2_con_scale": HyperParam(1e-4, 1e-0, explore_wt=0.8),
 }
 # ------------------------------
@@ -46,7 +73,7 @@ init_space = {name: tune.sample_from(hp.init) for name, hp in HYPERPARAM_SPACE.i
 # Set the mandatory config overrides to select datamodule and model
 mandatory_overrides = {
     "datamodule": DATASET_STR,
-    "model": DATASET_STR + "_PCR",
+    "model": DATASET_STR,
     "logger.wandb_logger.project": PROJECT_STR,
     "logger.wandb_logger.tags.1": DATASET_STR,
     "logger.wandb_logger.tags.2": RUN_TAG,
@@ -57,8 +84,8 @@ shutil.copyfile(__file__, RUN_DIR / Path(__file__).name)
 # Run the hyperparameter search
 metric = "valid/recon_smth"
 num_trials = 20
-perturbation_interval = 15
-burn_in_period = 50 + 15
+perturbation_interval = 25
+burn_in_period = 80 + 25
 analysis = tune.run(
     tune.with_parameters(
         run_model,
