@@ -121,6 +121,7 @@ analysis = tune.run(
     ),
     trial_dirname_creator=lambda trial: str(trial),
 )
+
 # Copy the best model to a new folder so it is easy to identify
 best_model_dir = RUN_DIR / "best_model"
 shutil.copytree(analysis.best_logdir, best_model_dir)

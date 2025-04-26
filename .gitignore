@@ -2,7 +2,6 @@ runs
 
 test_*.yaml
 tutorials/multisession/AnimalP
-datasets
 tutorials/multisession/lfads-output
 .DS_Store
 
