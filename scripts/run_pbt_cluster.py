@@ -12,7 +12,7 @@ from ray.tune.search.basic_variant import BasicVariantGenerator
 # Need to manually setup ray instance to ensure gpu 
 # if not ray.is_initialized():
 #     print("Ray not initialized. Starting new instance with 1 GPU...")
-#     ray.init(num_gpus=1, include_dashboard=True)
+#     ray.init(num_gpus=1, include_dashboard=True,)
 #     print("Ray successfully initialized.")
 # else:
 #     print("Ray already initialized. Available resources:")
@@ -22,7 +22,11 @@ from ray.tune.search.basic_variant import BasicVariantGenerator
 try:
     # This will connect to an existing Ray instance if one is available
     # Otherwise, it will start a new one
-    ray.init(address='auto', ignore_reinit_error=True)
+    ray.init(address='auto', 
+             ignore_reinit_error=True,
+             runtime_env={"env_vars": {"CUDA_VISIBLE_DEVICES": "0"}
+             }
+    )
     print("Connected to existing Ray instance")
     
     # Get information about the cluster
@@ -78,7 +82,25 @@ mandatory_overrides = {
     "logger.wandb_logger.tags.1": DATASET_STR,
     "logger.wandb_logger.tags.2": RUN_TAG,
 }
-RUN_DIR.mkdir(parents=True)
+
+# If directory exists, rename it
+if RUN_DIR.exists() and RUN_DIR.is_dir():
+    counter = 1
+    while True:
+        # Create a new name with suffix
+        new_name = f"{RUN_DIR}_{'0' if counter < 10 else ''}{counter}"
+        new_path = Path(new_name)
+        
+        # If this new name doesn't exist, rename the directory and break
+        if not new_path.exists():
+            RUN_DIR.rename(new_path)
+            break
+        
+        counter += 1
+
+    # Create the new empty directory
+    RUN_DIR.mkdir(exist_ok=True, parents=True)
+
 # Copy this script into the run directory
 shutil.copyfile(__file__, RUN_DIR / Path(__file__).name)
 # Run the hyperparameter search
