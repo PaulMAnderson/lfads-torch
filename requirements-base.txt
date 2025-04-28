@@ -8,5 +8,5 @@ scikit-learn
 ipykernel
 seaborn
 numpy<2
-protobuf
+protobuf==3.20.3
 tensorboard
