@@ -12,6 +12,7 @@ from hydra.utils import call, instantiate
 from omegaconf import OmegaConf, open_dict
 from ray import tune
 
+# Change from relative import to absolute import
 from .utils import flatten
 
 OmegaConf.register_new_resolver(
@@ -122,7 +123,7 @@ def run_model(
         
         # Temporary workaround for PTL step-resuming bug
         if ckpt_path:
-            ckpt = torch.load(ckpt_path, map_location=device)
+            ckpt = torch.load(ckpt_path, map_location=device, weights_only=False)
             trainer.fit_loop.epoch_loop._batches_that_stepped = ckpt["global_step"]
         
         # Train the model

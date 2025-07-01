@@ -88,7 +88,7 @@ analysis = tune.run(
         min_improvement_ratio=5e-4,
     ),
     config={**mandatory_overrides, **init_space},
-    resources_per_trial=dict(cpu=3, gpu=0.5),
+    resources_per_trial=dict(cpu=2, gpu=0.25),
     num_samples=num_trials,
     local_dir=RUN_DIR.parent,
     search_alg=BasicVariantGenerator(random_state=0),

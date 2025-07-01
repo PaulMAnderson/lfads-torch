@@ -1,0 +1,85 @@
+_target_: lfads_torch.model.LFADS
+
+# --------- architecture --------- #
+# These will need to be updated based on your actual data dimensions
+encod_data_dim: 100  # Number of neurons - UPDATE THIS
+encod_seq_len: 150   # Number of time bins (3000ms / 20ms bins) - UPDATE THIS  
+recon_seq_len: 150   # Same as encod_seq_len for standard LFADS
+ext_input_dim: 0     # No external inputs for now
+ic_enc_seq_len: 0    # Use full sequence for initial condition encoding
+ic_enc_dim: 64       # Initial condition encoder dimensionality
+ci_enc_dim: 64       # Controller input encoder dimensionality  
+ci_lag: 1            # Controller input lag
+con_dim: 64          # Controller dimensionality
+co_dim: 4            # Controller output dimensionality (number of inferred inputs)
+ic_dim: 64           # Initial condition dimensionality
+gen_dim: 128         # Generator RNN dimensionality
+fac_dim: 50          # Factor dimensionality (latent space size)
+
+# --------- readin / readout --------- #
+readin:
+  - _target_: torch.nn.Identity  # No transformation of input data
+readout:
+  _target_: torch.nn.ModuleList
+  modules:
+    - _target_: lfads_torch.modules.readin_readout.FanInLinear
+      in_features: ${model.fac_dim}
+      out_features: ${model.encod_data_dim}  # Same as number of neurons
+
+# --------- augmentation --------- #
+train_aug_stack:
+  _target_: lfads_torch.modules.augmentations.AugmentationStack
+  transforms:
+    - _target_: lfads_torch.modules.augmentations.CoordinatedDropout
+      cd_rate: 0.2       # Moderate dropout for electrophysiology data
+      cd_pass_rate: 0.0  # No pass-through rate
+      ic_enc_seq_len: ${model.ic_enc_seq_len}
+  batch_order: [0]
+  loss_order: [0]
+infer_aug_stack:
+  _target_: lfads_torch.modules.augmentations.AugmentationStack
+
+# --------- priors / posteriors --------- #
+reconstruction:
+  - _target_: lfads_torch.modules.recons.Poisson  # Poisson for spike count data
+variational: True
+co_prior:
+  _target_: lfads_torch.modules.priors.AutoregressiveMultivariateNormal
+  tau: 10.0    # Autoregressive timescale
+  nvar: 0.1    # Innovation variance
+  shape: ${model.co_dim}
+ic_prior:
+  _target_: lfads_torch.modules.priors.MultivariateNormal
+  mean: 0
+  variance: 0.1
+  shape: ${model.ic_dim}
+ic_post_var_min: 1.0e-4
+
+# --------- misc --------- #
+dropout_rate: 0.2     # Lower dropout for smaller datasets
+cell_clip: 5.0        # RNN cell state clipping
+loss_scale: 1.0e+4    # Loss scaling factor
+recon_reduce_mean: True
+
+# --------- learning rate --------- #
+lr_init: 3.0e-3       # Slightly lower initial learning rate
+lr_stop: 1.0e-5       # Final learning rate
+lr_decay: 0.95        # Learning rate decay factor
+lr_patience: 8        # Patience for learning rate scheduling
+lr_adam_beta1: 0.9    # Adam beta1
+lr_adam_beta2: 0.999  # Adam beta2
+lr_adam_epsilon: 1.0e-8
+lr_scheduler: False   # Disable automatic LR scheduling
+
+# --------- regularization --------- #
+weight_decay: 1.0e-4  # L2 weight decay
+l2_start_epoch: 0     # When to start L2 regularization
+l2_increase_epoch: 50 # When to reach full L2 strength
+l2_ic_enc_scale: 0.0  # L2 on initial condition encoder
+l2_ci_enc_scale: 0.0  # L2 on controller input encoder
+l2_gen_scale: 0.0     # L2 on generator
+l2_con_scale: 0.0     # L2 on controller
+kl_start_epoch: 0     # When to start KL regularization
+kl_increase_epoch: 50 # When to reach full KL strength
+kl_ic_scale: 1.0e-6   # KL regularization on initial conditions
+kl_co_scale: 1.0e-6   # KL regularization on controller outputs

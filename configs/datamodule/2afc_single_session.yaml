@@ -1,0 +1,15 @@
+_target_: lfads_torch.datamodules.BasicDataModule
+datafile_pattern: ${relpath:datasets/2afc_session_*.h5}
+batch_keys:
+  - trial_outcomes_train
+  - trial_outcomes_valid
+  - evidence_levels_train
+  - evidence_levels_valid
+  - choices_train
+  - choices_valid
+attr_keys:
+  - bin_width_ms
+  - pre_cue_bins
+  - waiting_period_bins
+  - post_decision_bins
+batch_size: 64  # Adjust based on your data size and GPU memory
