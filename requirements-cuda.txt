@@ -1,6 +1,7 @@
 --index-url https://download.pytorch.org/whl/cu118
+--extra-index-url https://pypi.org/simple/
 torch==2.1.0
 torchvision<=0.16.2
 torchaudio==2.1.0
-lightning<2.0 
-torchmetrics==1.2.0
+torchmetric
+lightning==2.5.2
