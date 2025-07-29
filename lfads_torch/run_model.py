@@ -7,6 +7,7 @@ from pathlib import Path
 
 import hydra
 import torch
+torch.cuda.set_per_process_memory_fraction(0.8)
 import lightning as pl
 from hydra.utils import call, instantiate
 from omegaconf import OmegaConf, open_dict
@@ -127,16 +128,20 @@ def run_model(
             trainer.fit_loop.epoch_loop._batches_that_stepped = ckpt["global_step"]
         
         # Train the model
-        trainer.fit(
-            model=model,
-            datamodule=datamodule,
-            ckpt_path=ckpt_path if ckpt_path else None,
-        )
-        
-        # Restore the best checkpoint if necessary - otherwise, use last checkpoint
-        if config.posterior_sampling.use_best_ckpt:
-            ckpt_path = trainer.checkpoint_callback.best_model_path
-            model.load_state_dict(torch.load(ckpt_path, map_location=device)["state_dict"])
+        try:
+            trainer.fit(
+                model=model,
+                datamodule=datamodule,
+                ckpt_path=ckpt_path if ckpt_path else None,
+            )
+            
+            # Restore the best checkpoint if necessary - otherwise, use last checkpoint
+            if config.posterior_sampling.use_best_ckpt:
+                ckpt_path = trainer.checkpoint_callback.best_model_path
+                model.load_state_dict(torch.load(ckpt_path, map_location=device)["state_dict"])
+
+        finally:
+            torch.cuda.empty_cache()
     else:
         if ckpt_path:
             # If not training, restore model from the checkpoint

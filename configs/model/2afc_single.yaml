@@ -1,0 +1,33 @@
+_target_: lfads_torch.models.lfads.LFADS
+data_dim: 205  # Your neuron count
+encod_seq_len: 125  # Your sequence length
+recon_seq_len: 125
+ic_enc_seq_len: 0
+ic_enc_dim: 64
+ci_enc_dim: 64
+ci_lag: 1
+con_dim: 64
+co_dim: 0
+ic_dim: 64
+gen_dim: 200
+fac_dim: 64
+dropout_rate: 0.05
+clip_val: 5.0
+max_norm: 200.0
+deep_freeze: false
+do_normalize_factors: true
+normalize_post_sample: true
+recon_reduce_mean: true
+loss_scale_ic: 1.0
+loss_scale_co: 1.0
+loss_scale_recon: 1.0
+l2_gen_scale: 2000.0
+l2_con_scale: 0.0
+kl_deep_scale: 1.0
+kl_obs_scale: 1.0
+kl_obs_dur_scale: 0.0
+kl_obs_early_stop_epoch: -1
+scheduler_patience: 6
+scheduler_factor: 0.95
+lr_init: 0.01
+lr_stop: 1e-05

@@ -342,15 +342,15 @@ class LFADS(pl.LightningModule):
         l2_ramp = self._compute_ramp(hps.l2_start_epoch, hps.l2_increase_epoch)
         optimizer.param_groups[0]["weight_decay"] = l2_ramp * hps.weight_decay
 
-    def _shared_step(
-        self,
-        batch: Dict[int, Tuple[SessionBatch, Tuple[torch.Tensor]]],
-        batch_idx: int,
-        split: Literal["train", "valid"],
-    ) -> torch.Tensor:
+    def _shared_step(self, batch, batch_idx: int, split: str) -> torch.Tensor:
         hps = self.hparams
         # Check that the split argument is valid
         assert split in ["train", "valid"]
+        # Handle case where batch might be a list instead of dict
+        if isinstance(batch, list):
+            # Convert list to dict with session indices as keys
+            batch = {i: item for i, item in enumerate(batch)}
+
         # Determine which sessions are in the batch
         sessions = sorted(batch.keys())
         # Discard the extra data - only the SessionBatches are relevant here
