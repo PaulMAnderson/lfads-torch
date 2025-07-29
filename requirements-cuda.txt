@@ -3,5 +3,5 @@
 torch==2.1.0
 torchvision<=0.16.2
 torchaudio==2.1.0
-torchmetric
+torchmetrics
 lightning==2.5.2
